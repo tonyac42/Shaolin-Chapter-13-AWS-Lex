@@ -12,6 +12,46 @@ def parse_int(n):
     except ValueError:
         return float("nan")
 
+# Validate Data
+def validate_data(age, investment_amount, intent_request):
+    """
+    Validates the data provided by the user.
+    """
+
+    # Validate the retirement age based on the user's current age.
+    # An retirement age of 65 years is considered by default.
+    if age is not None:
+        age = parse_int(
+            age
+        )  # Since parameters are strings it's important to cast values
+        if age < 0:
+            return build_validation_result(
+                False,
+                "age",
+                "Your age is invalid, can you provide an age greater than zero?",
+            )
+        
+        elif age >= 65:
+            return build_validation_result(
+                False,
+                "age",
+                "The maximum age to contract this service is 64, "
+                "can you provide an age between 0 and 64 please?",
+            )
+
+    # Validate the investment amount, it should be >= 5000
+    if investment_amount is not None:
+        investment_amount = parse_int(investment_amount)
+        if investment_amount < 5000:
+            return build_validation_result(
+                False,
+                "investmentAmount",
+                "The minimum investment amount is $5,000 USD, "
+                "could you please provide a greater amount?",
+            )
+
+    return build_validation_result(True, None, None)
+
 
 def build_validation_result(is_valid, violated_slot, message_content):
     """
@@ -99,6 +139,20 @@ def recommend_portfolio(intent_request):
 
         ### YOUR DATA VALIDATION CODE STARTS HERE ###
 
+        validation_result = validate_data(age, investment_amount, intent_request)
+        if not validation_result["isValid"]:
+            slots[validation_result["violatedSlot"]] = None  # Cleans invalid slot
+
+            # Returns an elicitSlot dialog to request new data for the invalid slot
+            return elicit_slot(
+                intent_request["sessionAttributes"],
+                intent_request["currentIntent"]["name"],
+                slots,
+                validation_result["violatedSlot"],
+                validation_result["message"],
+            )
+        
+        
         ### YOUR DATA VALIDATION CODE ENDS HERE ###
 
         # Fetch current session attibutes
